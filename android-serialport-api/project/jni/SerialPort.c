@@ -133,8 +133,17 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		cfg.c_cflag &= ~CSTOPB;
 
 		cfg.c_cflag &= ~CRTSCTS;                // 停用硬件流控制
-		cfg.c_cflag &= ~CLOCAL;                 // 使用流控制
-		cfg.c_iflag |= (IXON | IXOFF | IXANY);  // 使用软件流控制
+		cfg.c_iflag &= ~(IXON | IXOFF | IXANY); // 停用软件流控制
+		cfg.c_cflag |= CLOCAL;                  // 不使用流控制
+
+		cfg.c_cflag |= CREAD;                     // 启用接收器
+		cfg.c_iflag |= IGNBRK;                    // 忽略输入行的终止条件
+		cfg.c_oflag = 0;                          // 非加工方式输出
+		cfg.c_lflag = 0;                          // 非加工方式
+
+		//如果串口输入队列没有数据，程序将在read调用处阻塞
+		cfg.c_cc[VMIN]  = 1;
+		cfg.c_cc[VTIME] = 0;
 
 		if (tcsetattr(fd, TCSANOW, &cfg))
 		{
