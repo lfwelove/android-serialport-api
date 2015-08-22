@@ -124,10 +124,17 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		cfsetispeed(&cfg, speed);
 		cfsetospeed(&cfg, speed);
 
-		cfg.c_cflag &= ~PARENB;
-		cfg.c_cflag &= ~CSTOPB;
+		// 8N1
 		cfg.c_cflag &= ~CSIZE;
 		cfg.c_cflag |= CS8;
+		cfg.c_cflag &= ~PARENB;              // 无奇偶效验
+		cfg.c_iflag &= ~(INPCK  | ISTRIP);   // 禁用输入奇偶效验
+		cfg.c_iflag |= IGNPAR;               // 忽略奇偶效验错误
+		cfg.c_cflag &= ~CSTOPB;
+
+		cfg.c_cflag &= ~CRTSCTS;                // 停用硬件流控制
+		cfg.c_cflag &= ~CLOCAL;                 // 使用流控制
+		cfg.c_iflag |= (IXON | IXOFF | IXANY);  // 使用软件流控制
 
 		if (tcsetattr(fd, TCSANOW, &cfg))
 		{
@@ -137,11 +144,13 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 			return NULL;
 		}
 
+		/*
 		int status;
 		ioctl(fd, TIOCMGET, &status);
-		status |= TIOCM_DTR;
-		status |= TIOCM_RTS;
+		status &= ~TIOCM_DTR;
+		status &= ~TIOCM_RTS;
 		ioctl(fd, TIOCMSET, &status);
+		*/
 	}
 
 	/* Create a corresponding file descriptor */
