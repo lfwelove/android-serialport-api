@@ -105,6 +105,7 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 			/* TODO: throw an exception */
 			return NULL;
 		}
+
 	}
 
 	/* Configure device */
@@ -123,6 +124,11 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		cfsetispeed(&cfg, speed);
 		cfsetospeed(&cfg, speed);
 
+		cfg.c_cflag &= ~PARENB;
+		cfg.c_cflag &= ~CSTOPB;
+		cfg.c_cflag &= ~CSIZE;
+		cfg.c_cflag |= CS8;
+
 		if (tcsetattr(fd, TCSANOW, &cfg))
 		{
 			LOGE("tcsetattr() failed");
@@ -130,6 +136,12 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 			/* TODO: throw an exception */
 			return NULL;
 		}
+
+		int status;
+		ioctl(fd, TIOCMGET, &status);
+		status |= TIOCM_DTR;
+		status |= TIOCM_RTS;
+		ioctl(fd, TIOCMSET, &status);
 	}
 
 	/* Create a corresponding file descriptor */
