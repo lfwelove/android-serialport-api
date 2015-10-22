@@ -74,7 +74,7 @@ static speed_t getBaudrate(jint baudrate)
  * Signature: (Ljava/lang/String;II)Ljava/io/FileDescriptor;
  */
 JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
-  (JNIEnv *env, jclass thiz, jstring path, jint baudrate, jint flags)
+  (JNIEnv *env, jclass thiz, jstring path, jint baudrate, jint parity, jint dataBits, jint stopBits)
 {
 	int fd;
 	speed_t speed;
@@ -95,7 +95,7 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		jboolean iscopy;
 		const char *path_utf = (*env)->GetStringUTFChars(env, path, &iscopy);
 		LOGD("Opening serial port %s with flags 0x%x", path_utf, O_RDWR | flags);
-		fd = open(path_utf, O_RDWR | flags);
+		fd = open(path_utf, O_RDWR | O_NOCTTY | O_NONBLOCK);
 		LOGD("open() fd = %d", fd);
 		(*env)->ReleaseStringUTFChars(env, path, path_utf);
 		if (fd == -1)
@@ -124,13 +124,42 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		cfsetispeed(&cfg, speed);
 		cfsetospeed(&cfg, speed);
 
-		// 8N1
+		// 设置奇偶校验
+		if (parity == 0)		// 无奇偶校验
+		{
+			cfg.c_cflag &= ~PARENB ;
+		}
+		else if (parity == 1)	// 奇校验
+		{
+			cfg.c_cflag |= PARENB;
+			cfg.c_cflag |= PARODD;
+		}
+		else if (parity == 2)	// 偶校验
+		{
+			cfg.c_cflag |= PARENB;
+			cfg.c_cflag &= PARODD;
+		}
+
+		// 设置停止位
+		if (stopBits == 1)
+			cfg.c_cflag &= ~CSTOPB;
+		else if (stopBits == 2)
+			cfg.c_cflag |= CSTOPB;
+
+		// 设置数据位
 		cfg.c_cflag &= ~CSIZE;
-		cfg.c_cflag |= CS8;
-		cfg.c_cflag &= ~PARENB;              // 无奇偶效验
+		if (dataBits == 8)
+			cfg.c_cflag |= CS8;
+		else if (dataBits == 7)
+			cfg.c_cflag |= CS7;
+		else if (dataBits == 6)
+			cfg.c_cflag |= CS6;
+		else if (dataBits == 5)
+			cfg.c_cflag |= CS5;
+
+
 		cfg.c_iflag &= ~(INPCK  | ISTRIP);   // 禁用输入奇偶效验
 		cfg.c_iflag |= IGNPAR;               // 忽略奇偶效验错误
-		cfg.c_cflag &= ~CSTOPB;
 
 		cfg.c_cflag &= ~CRTSCTS;                // 停用硬件流控制
 		cfg.c_iflag &= ~(IXON | IXOFF | IXANY); // 停用软件流控制
@@ -153,13 +182,12 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 			return NULL;
 		}
 
-		/*
+		// DTR RTS
 		int status;
 		ioctl(fd, TIOCMGET, &status);
 		status &= ~TIOCM_DTR;
 		status &= ~TIOCM_RTS;
 		ioctl(fd, TIOCMSET, &status);
-		*/
 	}
 
 	/* Create a corresponding file descriptor */
