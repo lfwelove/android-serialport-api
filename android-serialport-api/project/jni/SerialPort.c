@@ -174,6 +174,13 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		cfg.c_cc[VMIN]  = 1;
 		cfg.c_cc[VTIME] = 0;
 
+		// DTR RTS
+		int status;
+		ioctl(fd, TIOCMGET, &status);
+		status &= ~TIOCM_DTR;
+		status &= ~TIOCM_RTS;
+		ioctl(fd, TIOCMSET, &status);
+
 		if (tcsetattr(fd, TCSANOW, &cfg))
 		{
 			LOGE("tcsetattr() failed");
@@ -181,13 +188,7 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 			/* TODO: throw an exception */
 			return NULL;
 		}
-
-		// DTR RTS
-		int status;
-		ioctl(fd, TIOCMGET, &status);
-		status &= ~TIOCM_DTR;
-		status &= ~TIOCM_RTS;
-		ioctl(fd, TIOCMSET, &status);
+		LOGE("Serial Port success");
 	}
 
 	/* Create a corresponding file descriptor */
