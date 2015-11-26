@@ -76,6 +76,11 @@ static speed_t getBaudrate(jint baudrate)
 JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
   (JNIEnv *env, jclass thiz, jstring path, jint baudrate, jint parity, jint dataBits, jint stopBits)
 {
+	LOGD("Java_android_1serialport_1api_SerialPort_open");
+	LOGD("baudrate:%d" , baudrate);
+	LOGD("parity:%d" , parity);
+	LOGD("dataBits:%d" , dataBits);
+	LOGD("stopBits:%d" , stopBits);
 	int fd;
 	speed_t speed;
 	jobject mFileDescriptor;
@@ -120,7 +125,7 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 			return NULL;
 		}
 
-		cfmakeraw(&cfg);
+//		cfmakeraw(&cfg);
 		cfsetispeed(&cfg, speed);
 		cfsetospeed(&cfg, speed);
 
@@ -161,10 +166,12 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		cfg.c_iflag &= ~(INPCK  | ISTRIP);   // 禁用输入奇偶效验
 		cfg.c_iflag |= IGNPAR;               // 忽略奇偶效验错误
 
-		cfg.c_cflag &= ~CRTSCTS;                // 停用硬件流控制
+		cfg.c_cflag &= ~CRTSCTS;                // 不使用流控制
+//		cfg.c_cflag |= CRTSCTS;					// 硬件流控制
 		cfg.c_iflag &= ~(IXON | IXOFF | IXANY); // 停用软件流控制
-		cfg.c_cflag |= CLOCAL;                  // 不使用流控制
+//		cfg.c_iflag |= IXON|IXOFF|IXANY;		// 软件流控制
 
+		cfg.c_cflag |= CLOCAL;					  // Local line – do not change “owner” of port
 		cfg.c_cflag |= CREAD;                     // 启用接收器
 		cfg.c_iflag |= IGNBRK;                    // 忽略输入行的终止条件
 		cfg.c_oflag = 0;                          // 非加工方式输出
@@ -174,13 +181,7 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		cfg.c_cc[VMIN]  = 1;
 		cfg.c_cc[VTIME] = 0;
 
-		// DTR RTS
-		int status;
-		ioctl(fd, TIOCMGET, &status);
-		status &= ~TIOCM_DTR;
-		status &= ~TIOCM_RTS;
-		ioctl(fd, TIOCMSET, &status);
-
+		tcflush(fd, TCIFLUSH);
 		if (tcsetattr(fd, TCSANOW, &cfg))
 		{
 			LOGE("tcsetattr() failed");
@@ -188,6 +189,14 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 			/* TODO: throw an exception */
 			return NULL;
 		}
+
+		// DTR RTS
+		int status;
+		ioctl(fd, TIOCMGET, &status);
+		status &= ~TIOCM_DTR;
+		status &= ~TIOCM_RTS;
+		ioctl(fd, TIOCMSET, &status);
+
 		LOGE("Serial Port success");
 	}
 
