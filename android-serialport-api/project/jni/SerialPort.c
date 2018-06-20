@@ -138,11 +138,13 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		{
 			cfg.c_cflag |= PARENB;
 			cfg.c_cflag |= PARODD;
+			// cfg.c_iflag |= (INPCK | ISTRIP);
 		}
 		else if (parity == 2)	// 偶校验
 		{
 			cfg.c_cflag |= PARENB;
-			cfg.c_cflag &= PARODD;
+			cfg.c_cflag &= ~PARODD;
+			// cfg.c_iflag |= (INPCK | ISTRIP);
 		}
 
 		// 设置停止位
@@ -163,7 +165,7 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 			cfg.c_cflag |= CS5;
 
 
-		cfg.c_iflag &= ~(INPCK  | ISTRIP);   // 禁用输入奇偶效验
+		// cfg.c_iflag &= ~(INPCK  | ISTRIP);   // 禁用输入奇偶效验
 		cfg.c_iflag |= IGNPAR;               // 忽略奇偶效验错误
 
 		cfg.c_cflag &= ~CRTSCTS;                // 不使用流控制
