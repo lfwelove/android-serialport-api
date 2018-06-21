@@ -133,6 +133,7 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 		if (parity == 0)		// 无奇偶校验
 		{
 			cfg.c_cflag &= ~PARENB ;
+			cfg.c_iflag &= ~(INPCK  | ISTRIP);   // 禁用输入奇偶效验
 		}
 		else if (parity == 1)	// 奇校验
 		{
