@@ -168,6 +168,7 @@ JNIEXPORT jobject JNICALL Java_android_1serialport_1api_SerialPort_open
 
 		// cfg.c_iflag &= ~(INPCK  | ISTRIP);   // 禁用输入奇偶效验
 		cfg.c_iflag |= IGNPAR;               // 忽略奇偶效验错误
+		cfg.c_iflag &= ~ICRNL;					// 预防0D强制变0A
 
 		cfg.c_cflag &= ~CRTSCTS;                // 不使用流控制
 //		cfg.c_cflag |= CRTSCTS;					// 硬件流控制
